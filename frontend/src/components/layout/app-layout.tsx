@@ -41,7 +41,7 @@ export function AppLayout() {
   return (
     <div className="min-h-svh bg-background text-foreground">
       <div className="grid min-h-svh lg:grid-cols-[260px_1fr]">
-        <aside className="hidden border-r bg-sidebar/95 lg:flex lg:flex-col">
+        <aside className="hidden h-svh border-r bg-sidebar/95 lg:sticky lg:top-0 lg:flex lg:flex-col lg:self-start">
           <div className="border-b px-5 py-5">
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
@@ -54,7 +54,7 @@ export function AppLayout() {
             </div>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
             {navigationItems.map((item) => (
               <NavLink
                 key={item.to}
