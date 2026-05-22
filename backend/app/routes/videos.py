@@ -19,7 +19,7 @@ def analyze_video(file: UploadFile = File(...)):
     safe_filename = Path(file.filename or "uploaded_video.mp4").name
     input_path = INPUT_DIR / safe_filename
 
-    # Save the uploaded video locally so the AI pipeline can read it later.
+    # Save the uploaded video locally so the placeholder AI pipeline can read it.
     with input_path.open("wb") as buffer:
         copyfileobj(file.file, buffer)
 

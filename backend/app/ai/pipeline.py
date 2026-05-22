@@ -1,9 +1,5 @@
-from pathlib import Path
-
-
 def process_video(input_path: str, output_path: str) -> dict:
-    """Placeholder video pipeline for the first backend version."""
-    input_file = Path(input_path)
+    """Return placeholder metadata until real video processing is implemented."""
 
     # TODO: Open the video with OpenCV and read frames.
     # TODO: Send selected frames to the SAM 3 integration for segmentation.
@@ -11,12 +7,17 @@ def process_video(input_path: str, output_path: str) -> dict:
     # TODO: Draw masks, boxes, labels, and movement paths on output frames.
     # TODO: Write the processed frames into output_path as a new video file.
 
+    # Keep all unimplemented values as false or null so the frontend can render
+    # a predictable response without pretending that analysis output is ready.
     return {
         "pipeline_status": "simulated",
-        "sam_3_enabled": False,
         "opencv_enabled": False,
+        "sam_3_enabled": False,
         "tracking_enabled": False,
         "overlays_enabled": False,
-        "input_filename": input_file.name,
-        "planned_output_path": output_path,
+        "frame_count": None,
+        "duration_seconds": None,
+        "fps": None,
+        "width": None,
+        "height": None,
     }
