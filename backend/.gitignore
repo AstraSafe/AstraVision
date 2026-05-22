@@ -11,6 +11,12 @@ input_videos/*
 output_videos/*
 !output_videos/.gitkeep
 
+experiments/outputs/
+experiments/*_mask*.jpg
+experiments/*_mask*.png
+experiments/*_overlay*.jpg
+experiments/*_overlay*.png
+
 *.mp4
 *.avi
 *.mov
