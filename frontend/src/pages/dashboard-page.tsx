@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import futbotmxShield from "@/assets/escudo_futbotmx_2026_color.svg"
 
 const heroBadges = [
   "FutBotMX",
@@ -126,12 +127,19 @@ export function DashboardPage() {
 
               <div className="max-w-3xl space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                    <Bot className="h-5 w-5" />
+                  <img
+                    src={futbotmxShield}
+                    alt="Escudo FutBotMX 2026"
+                    className="h-12 w-auto shrink-0 object-contain"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Plataforma de inteligencia deportiva
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Referencia visual del evento FutBotMX 2026
+                    </p>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Plataforma de inteligencia deportiva
-                  </p>
                 </div>
                 <div>
                   <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl lg:text-6xl">
