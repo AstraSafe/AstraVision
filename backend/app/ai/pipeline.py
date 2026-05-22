@@ -4,6 +4,11 @@ import cv2
 
 from app.ai.overlays import draw_tracked_objects
 from app.ai.sam_client import SamClient
+from app.ai.video_utils import (
+    create_sample_frames_dir,
+    generate_sample_frame_filename,
+    sample_frames_relative_dir,
+)
 from app.ai.tracking import (
     USE_COURT_ROI,
     get_court_roi_metadata,
@@ -31,8 +36,14 @@ SAM3_FRAME_INTERVAL = 30
 EXPORT_DEBUG_FRAMES = False
 DEBUG_FRAME_LIMIT = 5
 
+# Sample frames are saved for future manual SAM 3 testing. Keep this small so a
+# normal analysis does not create hundreds of images.
+EXPORT_SAMPLE_FRAMES = True
+SAMPLE_FRAME_INTERVAL = 30
+MAX_SAMPLE_FRAMES = 5
 
-def process_video(input_path: str, output_path: str) -> dict:
+
+def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
     """Read a video with OpenCV, add simple overlays, and write an output file."""
     capture = cv2.VideoCapture(input_path)
     if not capture.isOpened():
@@ -80,9 +91,15 @@ def process_video(input_path: str, output_path: str) -> dict:
     sam_3_frames_attempted = 0
     sam_3_detections = 0
     debug_frames_dir = output_file.parent / "debug_frames"
+    sample_frames_saved = 0
+    sample_frames_dir = None
+    sample_frames_dir_metadata = sample_frames_relative_dir(analysis_id)
 
     if EXPORT_DEBUG_FRAMES:
         debug_frames_dir.mkdir(parents=True, exist_ok=True)
+
+    if EXPORT_SAMPLE_FRAMES:
+        sample_frames_dir = create_sample_frames_dir(analysis_id)
 
     while True:
         has_frame, frame = capture.read()
@@ -139,6 +156,15 @@ def process_video(input_path: str, output_path: str) -> dict:
             debug_frame_path = debug_frames_dir / f"frame_{frames_processed:04d}.jpg"
             cv2.imwrite(str(debug_frame_path), frame)
 
+        if _should_save_sample_frame(frames_processed, sample_frames_saved):
+            sample_frames_saved += 1
+            sample_filename = generate_sample_frame_filename(
+                frame_index=frames_processed,
+                sample_number=sample_frames_saved,
+            )
+            sample_frame_path = sample_frames_dir / sample_filename
+            cv2.imwrite(str(sample_frame_path), frame)
+
         writer.write(frame)
 
     capture.release()
@@ -186,6 +212,10 @@ def process_video(input_path: str, output_path: str) -> dict:
         "sam_3_frames_attempted": sam_3_frames_attempted,
         "sam_3_detections": sam_3_detections,
         "detection_priority": "sam3_then_heuristic_then_prototype",
+        "sample_frames_enabled": EXPORT_SAMPLE_FRAMES,
+        "sample_frame_interval": SAMPLE_FRAME_INTERVAL,
+        "sample_frames_saved": sample_frames_saved,
+        "sample_frames_dir": sample_frames_dir_metadata,
     }
 
 
@@ -199,6 +229,14 @@ def _uses_prototype_fallback(tracked_objects: list[dict]) -> bool:
 
 def _should_attempt_sam3(frame_index: int, sam_3_available: bool) -> bool:
     return USE_SAM3 and sam_3_available and frame_index % SAM3_FRAME_INTERVAL == 0
+
+
+def _should_save_sample_frame(frame_index: int, sample_frames_saved: int) -> bool:
+    return (
+        EXPORT_SAMPLE_FRAMES
+        and sample_frames_saved < MAX_SAMPLE_FRAMES
+        and frame_index % SAMPLE_FRAME_INTERVAL == 0
+    )
 
 
 def _average_detections(total_detections: int, frames_processed: int) -> float:

@@ -12,7 +12,11 @@ def analyze_video(input_path: str) -> dict:
     output_file = Path(output_path)
 
     try:
-        metadata = process_video(input_path=input_path, output_path=output_path)
+        metadata = process_video(
+            input_path=input_path,
+            output_path=output_path,
+            analysis_id=analysis_id,
+        )
         status = "success"
         message = "Video analysis finished using the OpenCV prototype pipeline."
         output_ready = True

@@ -12,6 +12,7 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 BASE_DIR = Path(__file__).resolve().parents[2]
 INPUT_DIR = BASE_DIR / "input_videos"
 OUTPUT_DIR = BASE_DIR / "output_videos"
+SAMPLE_FRAMES_DIR = OUTPUT_DIR / "sample_frames"
 MAX_UPLOAD_SIZE_MB = 200
 BYTES_PER_MB = 1024 * 1024
 
@@ -50,6 +51,22 @@ def get_output_video(filename: str):
     return FileResponse(
         path=output_path,
         media_type="video/mp4",
+        filename=safe_filename,
+    )
+
+
+@router.get("/sample-frames/{analysis_id}/{filename}")
+def get_sample_frame(analysis_id: str, filename: str):
+    safe_analysis_id = Path(analysis_id).name
+    safe_filename = Path(filename).name
+    sample_frame_path = SAMPLE_FRAMES_DIR / safe_analysis_id / safe_filename
+
+    if not sample_frame_path.exists() or not sample_frame_path.is_file():
+        raise HTTPException(status_code=404, detail="Sample frame not found.")
+
+    return FileResponse(
+        path=sample_frame_path,
+        media_type="image/jpeg",
         filename=safe_filename,
     )
 

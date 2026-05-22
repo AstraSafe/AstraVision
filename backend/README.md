@@ -45,6 +45,7 @@ uvicorn app.main:app --reload
 - `GET /health`
 - `POST /videos/analyze`
 - `GET /videos/output/{filename}`
+- `GET /videos/sample-frames/{analysis_id}/{filename}`
 
 ## Test video analysis
 
@@ -165,6 +166,27 @@ When SAM 3 dependencies are installed later, the first real test should run only
 on selected frames using `SAM3_FRAME_INTERVAL` in `app/ai/pipeline.py`. Do not
 run SAM 3 on every frame at first. Heuristic detection and prototype fallback
 remain in place as fallback paths while SAM 3 is being evaluated.
+
+## Sample Frames
+
+Each successful analysis saves a small number of processed sample frames for
+future SAM 3 testing. They are written to:
+
+```text
+output_videos/sample_frames/{analysis_id}/
+```
+
+By default, the pipeline saves at most 5 frames, one every 30 frames. This keeps
+storage usage small while still giving us representative images for manual SAM 3
+experiments or future `SamClient` tests.
+
+SAM 3 is still not active. These sample frames are preparation only.
+
+You can open a saved frame through the API:
+
+```text
+http://127.0.0.1:8000/videos/sample-frames/{analysis_id}/sample_01_frame_000030.jpg
+```
 
 ## Future AI work
 
