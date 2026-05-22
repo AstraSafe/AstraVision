@@ -188,6 +188,23 @@ You can open a saved frame through the API:
 http://127.0.0.1:8000/videos/sample-frames/{analysis_id}/sample_01_frame_000030.jpg
 ```
 
+The analysis response also includes `metadata.sample_frame_urls`, which the
+frontend can use directly. Each URL already points to the sample-frame endpoint:
+
+```json
+{
+  "sample_frames_saved": 2,
+  "sample_frames_dir": "output_videos/sample_frames/{analysis_id}",
+  "sample_frame_urls": [
+    "/videos/sample-frames/{analysis_id}/sample_01_frame_000030.jpg",
+    "/videos/sample-frames/{analysis_id}/sample_02_frame_000060.jpg"
+  ]
+}
+```
+
+Generated sample frames live under `output_videos/`, which is ignored by Git
+except for the `.gitkeep` placeholder.
+
 ## Future AI work
 
 SAM 3 is not implemented yet. It will be added later inside

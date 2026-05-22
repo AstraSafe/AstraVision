@@ -7,6 +7,7 @@ from app.ai.sam_client import SamClient
 from app.ai.video_utils import (
     create_sample_frames_dir,
     generate_sample_frame_filename,
+    sample_frame_url,
     sample_frames_relative_dir,
 )
 from app.ai.tracking import (
@@ -94,6 +95,7 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
     sample_frames_saved = 0
     sample_frames_dir = None
     sample_frames_dir_metadata = sample_frames_relative_dir(analysis_id)
+    sample_frame_urls = []
 
     if EXPORT_DEBUG_FRAMES:
         debug_frames_dir.mkdir(parents=True, exist_ok=True)
@@ -164,6 +166,7 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
             )
             sample_frame_path = sample_frames_dir / sample_filename
             cv2.imwrite(str(sample_frame_path), frame)
+            sample_frame_urls.append(sample_frame_url(analysis_id, sample_filename))
 
         writer.write(frame)
 
@@ -216,6 +219,7 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
         "sample_frame_interval": SAMPLE_FRAME_INTERVAL,
         "sample_frames_saved": sample_frames_saved,
         "sample_frames_dir": sample_frames_dir_metadata,
+        "sample_frame_urls": sample_frame_urls,
     }
 
 

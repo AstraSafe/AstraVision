@@ -32,3 +32,9 @@ def generate_sample_frame_filename(frame_index: int, sample_number: int) -> str:
 def sample_frames_relative_dir(analysis_id: str) -> str:
     safe_analysis_id = Path(analysis_id).name
     return f"output_videos/sample_frames/{safe_analysis_id}"
+
+
+def sample_frame_url(analysis_id: str, filename: str) -> str:
+    safe_analysis_id = Path(analysis_id).name
+    safe_filename = Path(filename).name
+    return f"/videos/sample-frames/{safe_analysis_id}/{safe_filename}"
