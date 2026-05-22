@@ -6,13 +6,20 @@ Minimal FastAPI backend for the AstraVision FutBotMX computer vision project.
 
 This backend accepts FutBotMX video uploads and sends them through a simple AI pipeline prototype.
 
-The current milestone uses OpenCV to read the uploaded video, copy each frame, add basic overlay text, and export a processed video into `output_videos/`.
+The current milestone uses OpenCV to read the uploaded video, copy each frame,
+draw prototype tracking overlays, and export a processed video into
+`output_videos/`.
 
 ## Current status
 
-OpenCV prototype only.
+OpenCV prototype with demo tracking overlays.
 
-SAM 3, segmentation, robot tracking, ball tracking, training, databases, authentication, Docker, queues, and background jobs are not implemented yet.
+The current boxes and trails are deterministic demo objects for visual
+validation. They are not real AI detections yet.
+
+SAM 3, segmentation, real robot tracking, real ball tracking, training,
+databases, authentication, Docker, queues, and background jobs are not
+implemented yet.
 
 ## Install dependencies
 
@@ -62,6 +69,14 @@ The response includes an output URL when OpenCV finishes processing:
 }
 ```
 
+The processed output video shows:
+
+- two prototype robot boxes
+- one prototype ball box
+- labels and centroid points
+- short movement trails
+- an AstraVision prototype watermark
+
 Open the processed video in the browser:
 
 ```text
@@ -74,4 +89,6 @@ processing so the HTTP request does not stay open for too long.
 
 ## Future AI work
 
-SAM 3 is not implemented yet. It will be added later inside `app/ai/sam_client.py`, then connected to `app/ai/pipeline.py` with segmentation, robot and ball tracking, and richer video overlays.
+SAM 3 is not implemented yet. It will be added later inside
+`app/ai/sam_client.py`, then connected to `app/ai/pipeline.py` with real
+segmentation, robot and ball tracking, and richer video overlays.
