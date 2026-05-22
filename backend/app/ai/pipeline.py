@@ -3,6 +3,7 @@ from pathlib import Path
 import cv2
 
 from app.ai.overlays import draw_tracked_objects
+from app.ai.sam_client import SamClient
 from app.ai.tracking import (
     USE_COURT_ROI,
     get_court_roi_metadata,
@@ -22,8 +23,11 @@ USE_PROTOTYPE_FALLBACK = True
 # Draws the Court ROI rectangle on output frames so tuning is visible.
 DRAW_COURT_ROI = True
 
-# SAM 3 will later replace or improve this detection path. It is intentionally
-# not integrated in the current OpenCV-only milestone.
+# SAM 3 will later run on selected frames only. It stays disabled by default so
+# the backend does not require SAM 3 dependencies today.
+USE_SAM3 = False
+SAM3_FRAME_INTERVAL = 30
+
 EXPORT_DEBUG_FRAMES = False
 DEBUG_FRAME_LIMIT = 5
 
@@ -71,6 +75,10 @@ def process_video(input_path: str, output_path: str) -> dict:
     max_detections_in_frame = 0
     detections_filtered_by_roi = 0
     prototype_fallback_used = False
+    sam_client = SamClient()
+    sam_3_available = sam_client.is_available()
+    sam_3_frames_attempted = 0
+    sam_3_detections = 0
     debug_frames_dir = output_file.parent / "debug_frames"
 
     if EXPORT_DEBUG_FRAMES:
@@ -82,7 +90,17 @@ def process_video(input_path: str, output_path: str) -> dict:
             break
 
         frames_processed += 1
-        if USE_HEURISTIC_DETECTION:
+        sam_masks = []
+        if _should_attempt_sam3(frames_processed, sam_3_available):
+            sam_3_frames_attempted += 1
+            sam_result = sam_client.segment_frame(frame)
+            sam_masks = sam_result["masks"]
+            sam_3_detections += len(sam_masks)
+
+        if sam_masks:
+            # TODO: Convert real SAM 3 masks into tracked objects.
+            tracked_objects = []
+        elif USE_HEURISTIC_DETECTION:
             detection_result = get_heuristic_detection_result(frame, frames_processed, width, height)
             tracked_objects = detection_result["objects"]
             detections_filtered_by_roi += detection_result["filtered_by_roi"]
@@ -129,7 +147,7 @@ def process_video(input_path: str, output_path: str) -> dict:
     return {
         "pipeline_status": "opencv_processed",
         "opencv_enabled": True,
-        "sam_3_enabled": False,
+        "sam_3_enabled": USE_SAM3,
         "tracking_enabled": True,
         "overlays_enabled": True,
         "frame_count": frame_count,
@@ -163,6 +181,11 @@ def process_video(input_path: str, output_path: str) -> dict:
         "court_roi_enabled": USE_COURT_ROI,
         "court_roi": get_court_roi_metadata(),
         "detections_filtered_by_roi": detections_filtered_by_roi,
+        "sam_3_available": sam_3_available,
+        "sam_3_frame_interval": SAM3_FRAME_INTERVAL,
+        "sam_3_frames_attempted": sam_3_frames_attempted,
+        "sam_3_detections": sam_3_detections,
+        "detection_priority": "sam3_then_heuristic_then_prototype",
     }
 
 
@@ -172,6 +195,10 @@ def _count_heuristic_detections(tracked_objects: list[dict]) -> int:
 
 def _uses_prototype_fallback(tracked_objects: list[dict]) -> bool:
     return any(tracked_object.get("source") == "prototype" for tracked_object in tracked_objects)
+
+
+def _should_attempt_sam3(frame_index: int, sam_3_available: bool) -> bool:
+    return USE_SAM3 and sam_3_available and frame_index % SAM3_FRAME_INTERVAL == 0
 
 
 def _average_detections(total_detections: int, frames_processed: int) -> float:

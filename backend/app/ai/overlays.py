@@ -32,6 +32,15 @@ def draw_tracked_objects(
     return frame
 
 
+def draw_segmentation_masks(frame, masks):
+    """Future placeholder for SAM 3 mask overlays.
+
+    Real mask drawing will be added after SAM 3 returns mask data. Keeping this
+    no-op function now gives the pipeline a clear extension point.
+    """
+    return frame
+
+
 def draw_court_roi(frame):
     frame_height, frame_width = frame.shape[:2]
     x_min, y_min, x_max, y_max = get_court_roi_pixels(frame_width, frame_height)

@@ -151,6 +151,21 @@ too strict, or the Court ROI is filtering out too much. To evaluate real
 detection honestly, temporarily set `USE_PROTOTYPE_FALLBACK = False` in
 `app/ai/pipeline.py`. The next major milestone is SAM 3 integration.
 
+## SAM 3 Integration Plan
+
+SAM 3 is not active yet and is not required to run this backend. The integration
+boundary lives in `app/ai/sam_client.py` as `SamClient`.
+
+For now, `SamClient.is_available()` returns `False`, and
+`SamClient.segment_frame()` returns an empty result with a clear message. This
+lets the OpenCV pipeline stay stable while the SAM 3 dependency and model setup
+are still pending.
+
+When SAM 3 dependencies are installed later, the first real test should run only
+on selected frames using `SAM3_FRAME_INTERVAL` in `app/ai/pipeline.py`. Do not
+run SAM 3 on every frame at first. Heuristic detection and prototype fallback
+remain in place as fallback paths while SAM 3 is being evaluated.
+
 ## Future AI work
 
 SAM 3 is not implemented yet. It will be added later inside
