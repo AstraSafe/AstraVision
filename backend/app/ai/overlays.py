@@ -4,6 +4,7 @@ import cv2
 OBJECT_COLORS = {
     "robot": (0, 255, 255),
     "ball": (0, 180, 255),
+    "candidate": (255, 120, 0),
 }
 TRAIL_COLOR = (255, 255, 255)
 WATERMARK_COLOR = (0, 255, 0)

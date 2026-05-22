@@ -7,6 +7,8 @@ from app.ai.tracking import get_heuristic_tracked_objects, get_prototype_tracked
 
 
 USE_HEURISTIC_DETECTION = True
+EXPORT_DEBUG_FRAMES = False
+DEBUG_FRAME_LIMIT = 5
 
 
 def process_video(input_path: str, output_path: str) -> dict:
@@ -48,6 +50,12 @@ def process_video(input_path: str, output_path: str) -> dict:
     max_trail_points = 30
     heuristic_frames = 0
     prototype_fallback_frames = 0
+    total_heuristic_detections = 0
+    max_detections_in_frame = 0
+    debug_frames_dir = output_file.parent / "debug_frames"
+
+    if EXPORT_DEBUG_FRAMES:
+        debug_frames_dir.mkdir(parents=True, exist_ok=True)
 
     while True:
         has_frame, frame = capture.read()
@@ -60,10 +68,15 @@ def process_video(input_path: str, output_path: str) -> dict:
         else:
             tracked_objects = get_prototype_tracked_objects(frames_processed, width, height)
 
-        if _uses_heuristic_detection(tracked_objects):
+        heuristic_detection_count = _count_heuristic_detections(tracked_objects)
+
+        if heuristic_detection_count > 0:
             heuristic_frames += 1
         else:
             prototype_fallback_frames += 1
+
+        total_heuristic_detections += heuristic_detection_count
+        max_detections_in_frame = max(max_detections_in_frame, heuristic_detection_count)
 
         for tracked_object in tracked_objects:
             object_id = tracked_object["id"]
@@ -71,6 +84,13 @@ def process_video(input_path: str, output_path: str) -> dict:
             trails[object_id] = trails[object_id][-max_trail_points:]
 
         draw_tracked_objects(frame, tracked_objects, trails)
+
+        # Debug frame export is disabled by default. Turn it on only while
+        # tuning HSV thresholds against real FutBotMX clips.
+        if EXPORT_DEBUG_FRAMES and frames_processed <= DEBUG_FRAME_LIMIT:
+            debug_frame_path = debug_frames_dir / f"frame_{frames_processed:04d}.jpg"
+            cv2.imwrite(str(debug_frame_path), frame)
+
         writer.write(frame)
 
     capture.release()
@@ -99,8 +119,21 @@ def process_video(input_path: str, output_path: str) -> dict:
             "heuristic_frames": heuristic_frames,
             "prototype_fallback_frames": prototype_fallback_frames,
         },
+        "total_heuristic_detections": total_heuristic_detections,
+        "average_detections_per_frame": _average_detections(
+            total_heuristic_detections,
+            frames_processed,
+        ),
+        "max_detections_in_frame": max_detections_in_frame,
     }
 
 
-def _uses_heuristic_detection(tracked_objects: list[dict]) -> bool:
-    return any(tracked_object.get("source") == "heuristic" for tracked_object in tracked_objects)
+def _count_heuristic_detections(tracked_objects: list[dict]) -> int:
+    return sum(1 for tracked_object in tracked_objects if tracked_object.get("source") == "heuristic")
+
+
+def _average_detections(total_detections: int, frames_processed: int) -> float:
+    if frames_processed == 0:
+        return 0.0
+
+    return round(total_detections / frames_processed, 2)

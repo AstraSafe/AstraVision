@@ -2,7 +2,28 @@ import cv2
 import numpy as np
 
 
-MAX_HEURISTIC_OBJECTS = 3
+# Saturated HSV range: finds colorful regions such as bright jerseys, markers,
+# or objects with strong color contrast.
+SATURATED_HSV_LOWER = np.array([0, 70, 90])
+SATURATED_HSV_UPPER = np.array([179, 255, 255])
+
+# Bright HSV range: finds light/white regions that may not be saturated.
+BRIGHT_HSV_LOWER = np.array([0, 0, 210])
+BRIGHT_HSV_UPPER = np.array([179, 80, 255])
+
+# Minimum contour area: increase this to ignore more tiny noise.
+MIN_CONTOUR_AREA = 80
+
+# Maximum contour area ratio: lower this if the background is being detected as
+# one huge object.
+MAX_CONTOUR_AREA_RATIO = 0.25
+
+# Maximum detections per frame: keeps the demo readable and stable.
+MAX_DETECTIONS_PER_FRAME = 3
+
+# Minimum box size: increase these if tiny boxes clutter the output video.
+MIN_BBOX_WIDTH = 5
+MIN_BBOX_HEIGHT = 5
 
 
 def get_prototype_tracked_objects(frame_index: int, width: int, height: int) -> list[dict]:
@@ -42,13 +63,13 @@ def get_heuristic_tracked_objects(frame, frame_index: int, width: int, height: i
 
     saturated_mask = cv2.inRange(
         hsv_frame,
-        np.array([0, 70, 90]),
-        np.array([179, 255, 255]),
+        SATURATED_HSV_LOWER,
+        SATURATED_HSV_UPPER,
     )
     bright_mask = cv2.inRange(
         hsv_frame,
-        np.array([0, 0, 210]),
-        np.array([179, 80, 255]),
+        BRIGHT_HSV_LOWER,
+        BRIGHT_HSV_UPPER,
     )
     mask = cv2.bitwise_or(saturated_mask, bright_mask)
 
@@ -62,7 +83,7 @@ def get_heuristic_tracked_objects(frame, frame_index: int, width: int, height: i
     if not candidates:
         return get_prototype_tracked_objects(frame_index, width, height)
 
-    return _make_heuristic_objects(candidates[:MAX_HEURISTIC_OBJECTS])
+    return _make_heuristic_objects(candidates[:MAX_DETECTIONS_PER_FRAME])
 
 
 def _make_object(
@@ -97,17 +118,16 @@ def _moving_position(frame_index: int, start: int, speed: int, limit: int) -> in
 
 def _contours_to_candidates(contours, frame_width: int, frame_height: int) -> list[dict]:
     frame_area = frame_width * frame_height
-    min_area = max(80, frame_area * 0.0008)
-    max_area = frame_area * 0.25
+    max_area = frame_area * MAX_CONTOUR_AREA_RATIO
     candidates = []
 
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area < min_area or area > max_area:
+        if area < MIN_CONTOUR_AREA or area > max_area:
             continue
 
         x, y, box_width, box_height = cv2.boundingRect(contour)
-        if box_width <= 4 or box_height <= 4:
+        if box_width < MIN_BBOX_WIDTH or box_height < MIN_BBOX_HEIGHT:
             continue
 
         confidence = min(0.95, max(0.25, area / (frame_area * 0.03)))
@@ -127,20 +147,17 @@ def _contours_to_candidates(contours, frame_width: int, frame_height: int) -> li
 
 
 def _make_heuristic_objects(candidates: list[dict]) -> list[dict]:
-    object_slots = [
-        ("robot_1", "robot_1", "robot"),
-        ("robot_2", "robot_2", "robot"),
-        ("ball", "ball", "ball"),
-    ]
     tracked_objects = []
 
     for index, candidate in enumerate(candidates):
-        object_id, label, object_type = object_slots[index]
+        object_number = index + 1
+        object_id = f"candidate_{object_number}"
+        label = f"candidate_{object_number}"
         tracked_objects.append(
             _make_object(
                 object_id,
                 label,
-                object_type,
+                "candidate",
                 candidate["x"],
                 candidate["y"],
                 candidate["width"],

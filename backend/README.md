@@ -79,7 +79,7 @@ The processed output video shows:
 - short movement trails
 - an AstraVision prototype watermark
 
-Labels include the detection source, for example `robot_1 [heuristic]` or
+Labels include the detection source, for example `candidate_1 [heuristic]` or
 `ball [prototype]`.
 
 Open the processed video in the browser:
@@ -91,6 +91,22 @@ http://127.0.0.1:8000/videos/output/example_generated-id_analyzed.mp4
 Uploads larger than 200 MB are rejected with a clear JSON error response. Large
 videos should be handled later with background jobs, queues, or offline
 processing so the HTTP request does not stay open for too long.
+
+## Heuristic Detection Tuning
+
+The current heuristic detector is experimental. It uses HSV thresholds and
+simple contour filters in `app/ai/tracking.py` to find bright or colorful
+regions in each frame.
+
+Heuristic detections are labeled as candidates, such as
+`candidate_1 [heuristic]`. They are not final robot or ball detections yet. If
+the detector does not find useful candidates, the backend keeps using prototype
+fallback objects like `robot_1 [prototype]`, `robot_2 [prototype]`, and
+`ball [prototype]` so the demo video remains readable.
+
+For tuning, test with real FutBotMX clips that are 10-30 seconds long. Start by
+adjusting the HSV threshold constants and contour filter constants in
+`app/ai/tracking.py`, then compare the processed video and metadata counters.
 
 ## Future AI work
 
