@@ -1,7 +1,6 @@
 import {
   Activity,
   BarChart3,
-  Bot,
   CircleCheck,
   FileText,
   LayoutDashboard,
@@ -10,9 +9,11 @@ import {
 } from "lucide-react"
 import { NavLink, Outlet } from "react-router-dom"
 
+import { ThemeToggle } from "@/components/theme/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import futbotmxShield from "@/assets/escudo_futbotmx_2026_color.svg"
 
 const navigationItems = [
   {
@@ -44,9 +45,11 @@ export function AppLayout() {
         <aside className="hidden h-svh border-r bg-sidebar/95 lg:sticky lg:top-0 lg:flex lg:flex-col lg:self-start">
           <div className="border-b px-5 py-5">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                <Bot className="h-5 w-5" />
-              </div>
+              <img
+                src={futbotmxShield}
+                alt="Escudo FutBotMX 2026"
+                className="h-10 w-auto shrink-0 object-contain"
+              />
               <div>
                 <p className="text-sm font-semibold leading-none">AstraVision</p>
                 <p className="mt-1 text-xs text-muted-foreground">FutBotMX · IA</p>
@@ -97,19 +100,22 @@ export function AppLayout() {
                 </p>
               </div>
 
-              <div className="hidden items-center gap-2 md:flex">
-                <Badge variant="outline" className="gap-1.5">
-                  <CircleCheck className="h-3 w-3" />
-                  Sistema listo
-                </Badge>
-                <Button variant="outline" size="sm">
-                  <UploadCloud className="h-4 w-4" />
-                  Subir video
-                </Button>
-                <Button size="sm">
-                  <BarChart3 className="h-4 w-4" />
-                  Nuevo análisis
-                </Button>
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-2 md:flex">
+                  <Badge variant="outline" className="gap-1.5">
+                    <CircleCheck className="h-3 w-3" />
+                    Sistema listo
+                  </Badge>
+                  <Button variant="outline" size="sm">
+                    <UploadCloud className="h-4 w-4" />
+                    Subir video
+                  </Button>
+                  <Button size="sm">
+                    <BarChart3 className="h-4 w-4" />
+                    Nuevo análisis
+                  </Button>
+                </div>
+                <ThemeToggle />
               </div>
             </div>
 
