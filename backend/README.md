@@ -7,15 +7,18 @@ Minimal FastAPI backend for the AstraVision FutBotMX computer vision project.
 This backend accepts FutBotMX video uploads and sends them through a simple AI pipeline prototype.
 
 The current milestone uses OpenCV to read the uploaded video, copy each frame,
-draw prototype tracking overlays, and export a processed video into
-`output_videos/`.
+try simple heuristic detection, draw tracking overlays, and export a processed
+video into `output_videos/`.
 
 ## Current status
 
-OpenCV prototype with demo tracking overlays.
+OpenCV prototype with experimental heuristic detection and demo tracking
+overlays.
 
-The current boxes and trails are deterministic demo objects for visual
-validation. They are not real AI detections yet.
+The backend now tries beginner-friendly HSV/contour heuristics to detect bright
+or colorful regions in each frame. This is experimental and imperfect. If no
+useful heuristic regions are found, the backend falls back to deterministic
+prototype objects so the demo output stays stable.
 
 SAM 3, segmentation, real robot tracking, real ball tracking, training,
 databases, authentication, Docker, queues, and background jobs are not
@@ -71,11 +74,13 @@ The response includes an output URL when OpenCV finishes processing:
 
 The processed output video shows:
 
-- two prototype robot boxes
-- one prototype ball box
+- heuristic or prototype robot and ball boxes
 - labels and centroid points
 - short movement trails
 - an AstraVision prototype watermark
+
+Labels include the detection source, for example `robot_1 [heuristic]` or
+`ball [prototype]`.
 
 Open the processed video in the browser:
 
@@ -91,4 +96,5 @@ processing so the HTTP request does not stay open for too long.
 
 SAM 3 is not implemented yet. It will be added later inside
 `app/ai/sam_client.py`, then connected to `app/ai/pipeline.py` with real
-segmentation, robot and ball tracking, and richer video overlays.
+segmentation, robot and ball tracking, and richer video overlays. The current
+heuristic detector is only a visual demo validation step before that work.

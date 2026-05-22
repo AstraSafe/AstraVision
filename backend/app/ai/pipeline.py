@@ -3,7 +3,10 @@ from pathlib import Path
 import cv2
 
 from app.ai.overlays import draw_tracked_objects
-from app.ai.tracking import get_prototype_tracked_objects
+from app.ai.tracking import get_heuristic_tracked_objects, get_prototype_tracked_objects
+
+
+USE_HEURISTIC_DETECTION = True
 
 
 def process_video(input_path: str, output_path: str) -> dict:
@@ -43,6 +46,8 @@ def process_video(input_path: str, output_path: str) -> dict:
     frames_processed = 0
     trails = {}
     max_trail_points = 30
+    heuristic_frames = 0
+    prototype_fallback_frames = 0
 
     while True:
         has_frame, frame = capture.read()
@@ -50,7 +55,15 @@ def process_video(input_path: str, output_path: str) -> dict:
             break
 
         frames_processed += 1
-        tracked_objects = get_prototype_tracked_objects(frames_processed, width, height)
+        if USE_HEURISTIC_DETECTION:
+            tracked_objects = get_heuristic_tracked_objects(frame, frames_processed, width, height)
+        else:
+            tracked_objects = get_prototype_tracked_objects(frames_processed, width, height)
+
+        if _uses_heuristic_detection(tracked_objects):
+            heuristic_frames += 1
+        else:
+            prototype_fallback_frames += 1
 
         for tracked_object in tracked_objects:
             object_id = tracked_object["id"]
@@ -80,4 +93,14 @@ def process_video(input_path: str, output_path: str) -> dict:
             "ball": 1,
         },
         "prototype_tracking": True,
+        "heuristic_detection_enabled": USE_HEURISTIC_DETECTION,
+        "prototype_fallback_enabled": True,
+        "detection_source_summary": {
+            "heuristic_frames": heuristic_frames,
+            "prototype_fallback_frames": prototype_fallback_frames,
+        },
     }
+
+
+def _uses_heuristic_detection(tracked_objects: list[dict]) -> bool:
+    return any(tracked_object.get("source") == "heuristic" for tracked_object in tracked_objects)

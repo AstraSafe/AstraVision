@@ -31,7 +31,7 @@ def draw_bounding_box(frame, tracked_object: dict):
 
 def draw_label(frame, tracked_object: dict):
     x, y, _, _ = tracked_object["bbox"]
-    label = tracked_object["label"]
+    label = f"{tracked_object['label']} [{tracked_object.get('source', 'unknown')}]"
     color = _object_color(tracked_object)
     label_position = (x, max(18, y - 8))
     cv2.putText(
