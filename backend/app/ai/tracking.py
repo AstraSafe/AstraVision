@@ -56,9 +56,42 @@ def get_prototype_tracked_objects(frame_index: int, width: int, height: int) -> 
     ball_y = _moving_position(frame_index, start=height // 3, speed=2, limit=height - ball_size)
 
     return [
-        _make_object("robot_1", "robot_1", "robot", robot_1_x, robot_1_y, robot_width, robot_height, 0.5, "prototype"),
-        _make_object("robot_2", "robot_2", "robot", robot_2_x, robot_2_y, robot_width, robot_height, 0.5, "prototype"),
-        _make_object("ball", "ball", "ball", ball_x, ball_y, ball_size, ball_size, 0.5, "prototype"),
+        _make_object(
+            "robot_1",
+            "robot_1",
+            "robot",
+            robot_1_x,
+            robot_1_y,
+            robot_width,
+            robot_height,
+            0.5,
+            "prototype",
+            True,
+        ),
+        _make_object(
+            "robot_2",
+            "robot_2",
+            "robot",
+            robot_2_x,
+            robot_2_y,
+            robot_width,
+            robot_height,
+            0.5,
+            "prototype",
+            True,
+        ),
+        _make_object(
+            "ball",
+            "ball",
+            "ball",
+            ball_x,
+            ball_y,
+            ball_size,
+            ball_size,
+            0.5,
+            "prototype",
+            True,
+        ),
     ]
 
 
@@ -71,8 +104,9 @@ def get_heuristic_detection_result(frame, frame_index: int, width: int, height: 
     """Detect simple bright or colorful regions with OpenCV.
 
     This is an experiment, not real AI. It looks for high-saturation or bright
-    regions in HSV color space, converts useful contours into tracked objects,
-    and falls back to prototype tracking when the frame has no stable candidates.
+    regions in HSV color space and converts useful contours into tracked
+    objects. The pipeline decides whether to add prototype fallback objects for
+    demo stability.
     """
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -98,15 +132,13 @@ def get_heuristic_detection_result(frame, frame_index: int, width: int, height: 
 
     if not valid_candidates:
         return {
-            "objects": get_prototype_tracked_objects(frame_index, width, height),
+            "objects": [],
             "filtered_by_roi": filtered_by_roi,
-            "used_prototype_fallback": True,
         }
 
     return {
         "objects": _make_heuristic_objects(valid_candidates[:MAX_DETECTIONS_PER_FRAME]),
         "filtered_by_roi": filtered_by_roi,
-        "used_prototype_fallback": False,
     }
 
 
@@ -137,6 +169,7 @@ def _make_object(
     height: int,
     confidence: float,
     source: str,
+    is_demo: bool,
 ) -> dict:
     return {
         "id": object_id,
@@ -146,6 +179,7 @@ def _make_object(
         "centroid": [x + width // 2, y + height // 2],
         "confidence": confidence,
         "source": source,
+        "is_demo": is_demo,
     }
 
 
@@ -229,6 +263,7 @@ def _make_heuristic_objects(candidates: list[dict]) -> list[dict]:
                 candidate["height"],
                 candidate["confidence"],
                 "heuristic",
+                False,
             )
         )
 

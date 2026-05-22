@@ -11,7 +11,19 @@ from app.ai.tracking import (
 )
 
 
+# Attempts real frame-derived candidates using simple OpenCV HSV and contour
+# heuristics. This is experimental and not final robot or ball detection.
 USE_HEURISTIC_DETECTION = True
+
+# Draws fake deterministic objects only when heuristics find nothing. Keep this
+# on for demo stability; turn it off to evaluate real detection honestly.
+USE_PROTOTYPE_FALLBACK = True
+
+# Draws the Court ROI rectangle on output frames so tuning is visible.
+DRAW_COURT_ROI = True
+
+# SAM 3 will later replace or improve this detection path. It is intentionally
+# not integrated in the current OpenCV-only milestone.
 EXPORT_DEBUG_FRAMES = False
 DEBUG_FRAME_LIMIT = 5
 
@@ -58,6 +70,7 @@ def process_video(input_path: str, output_path: str) -> dict:
     total_heuristic_detections = 0
     max_detections_in_frame = 0
     detections_filtered_by_roi = 0
+    prototype_fallback_used = False
     debug_frames_dir = output_file.parent / "debug_frames"
 
     if EXPORT_DEBUG_FRAMES:
@@ -74,13 +87,17 @@ def process_video(input_path: str, output_path: str) -> dict:
             tracked_objects = detection_result["objects"]
             detections_filtered_by_roi += detection_result["filtered_by_roi"]
         else:
+            tracked_objects = []
+
+        if not tracked_objects and USE_PROTOTYPE_FALLBACK:
             tracked_objects = get_prototype_tracked_objects(frames_processed, width, height)
+            prototype_fallback_used = True
 
         heuristic_detection_count = _count_heuristic_detections(tracked_objects)
 
         if heuristic_detection_count > 0:
             heuristic_frames += 1
-        else:
+        elif _uses_prototype_fallback(tracked_objects):
             prototype_fallback_frames += 1
 
         total_heuristic_detections += heuristic_detection_count
@@ -91,7 +108,12 @@ def process_video(input_path: str, output_path: str) -> dict:
             trails.setdefault(object_id, []).append(tracked_object["centroid"])
             trails[object_id] = trails[object_id][-max_trail_points:]
 
-        draw_tracked_objects(frame, tracked_objects, trails)
+        draw_tracked_objects(
+            frame,
+            tracked_objects,
+            trails,
+            draw_court_roi_enabled=DRAW_COURT_ROI and USE_COURT_ROI,
+        )
 
         # Debug frame export is disabled by default. Turn it on only while
         # tuning HSV thresholds against real FutBotMX clips.
@@ -120,13 +142,18 @@ def process_video(input_path: str, output_path: str) -> dict:
             "robots": 2,
             "ball": 1,
         },
-        "prototype_tracking": True,
+        "prototype_tracking": USE_PROTOTYPE_FALLBACK,
         "heuristic_detection_enabled": USE_HEURISTIC_DETECTION,
-        "prototype_fallback_enabled": True,
+        "prototype_fallback_enabled": USE_PROTOTYPE_FALLBACK,
         "detection_source_summary": {
             "heuristic_frames": heuristic_frames,
             "prototype_fallback_frames": prototype_fallback_frames,
         },
+        "prototype_fallback_used": prototype_fallback_used,
+        "prototype_fallback_frames": prototype_fallback_frames,
+        "heuristic_frames": heuristic_frames,
+        "detection_mode": _detection_mode(),
+        "warning": _fallback_warning(prototype_fallback_used),
         "total_heuristic_detections": total_heuristic_detections,
         "average_detections_per_frame": _average_detections(
             total_heuristic_detections,
@@ -143,8 +170,29 @@ def _count_heuristic_detections(tracked_objects: list[dict]) -> int:
     return sum(1 for tracked_object in tracked_objects if tracked_object.get("source") == "heuristic")
 
 
+def _uses_prototype_fallback(tracked_objects: list[dict]) -> bool:
+    return any(tracked_object.get("source") == "prototype" for tracked_object in tracked_objects)
+
+
 def _average_detections(total_detections: int, frames_processed: int) -> float:
     if frames_processed == 0:
         return 0.0
 
     return round(total_detections / frames_processed, 2)
+
+
+def _detection_mode() -> str:
+    if USE_HEURISTIC_DETECTION and USE_PROTOTYPE_FALLBACK:
+        return "heuristic_with_prototype_fallback"
+    if USE_HEURISTIC_DETECTION:
+        return "heuristic_only"
+    if USE_PROTOTYPE_FALLBACK:
+        return "prototype_fallback_only"
+    return "no_detection"
+
+
+def _fallback_warning(prototype_fallback_used: bool) -> str | None:
+    if not prototype_fallback_used:
+        return None
+
+    return "Prototype fallback is demo-only and does not represent real detection."

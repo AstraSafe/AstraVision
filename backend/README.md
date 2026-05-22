@@ -17,7 +17,7 @@ overlays.
 
 The backend now tries beginner-friendly HSV/contour heuristics to detect bright
 or colorful regions in each frame. This is experimental and imperfect. If no
-useful heuristic regions are found, the backend falls back to deterministic
+useful heuristic regions are found, the backend can fall back to deterministic
 prototype objects so the demo output stays stable.
 
 SAM 3, segmentation, real robot tracking, real ball tracking, training,
@@ -80,7 +80,7 @@ The processed output video shows:
 - an AstraVision prototype watermark
 
 Labels include the detection source, for example `candidate_1 [heuristic]` or
-`ball [prototype]`.
+`ball [prototype demo]`.
 
 Open the processed video in the browser:
 
@@ -101,8 +101,8 @@ regions in each frame.
 Heuristic detections are labeled as candidates, such as
 `candidate_1 [heuristic]`. They are not final robot or ball detections yet. If
 the detector does not find useful candidates, the backend keeps using prototype
-fallback objects like `robot_1 [prototype]`, `robot_2 [prototype]`, and
-`ball [prototype]` so the demo video remains readable.
+fallback objects like `robot_1 [prototype demo]`, `robot_2 [prototype demo]`,
+and `ball [prototype demo]` so the demo video remains readable.
 
 For tuning, test with real FutBotMX clips that are 10-30 seconds long. Start by
 adjusting the HSV threshold constants and contour filter constants in
@@ -128,6 +128,28 @@ Tune these constants first when real clips detect too much background:
 
 These detections are still heuristic candidates, not real SAM 3 robot or ball
 detections. Prototype fallback remains enabled for demo stability.
+
+## Prototype Fallback
+
+Heuristic detection is experimental. It attempts real frame-derived candidates,
+but it can still miss robots and the ball or detect visual noise.
+
+Prototype fallback is demo-only. It draws fake deterministic objects when the
+heuristic detector finds no usable candidates. This keeps the output video
+visually understandable for demos, but it does not represent real detection.
+
+The pipeline exposes this clearly in metadata:
+
+- `heuristic_frames`
+- `prototype_fallback_frames`
+- `prototype_fallback_used`
+- `detection_mode`
+- `warning`
+
+Many `prototype_fallback_frames` means the real heuristic detector is failing,
+too strict, or the Court ROI is filtering out too much. To evaluate real
+detection honestly, temporarily set `USE_PROTOTYPE_FALLBACK = False` in
+`app/ai/pipeline.py`. The next major milestone is SAM 3 integration.
 
 ## Future AI work
 

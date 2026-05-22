@@ -1,6 +1,6 @@
 import cv2
 
-from app.ai.tracking import USE_COURT_ROI, get_court_roi_pixels
+from app.ai.tracking import get_court_roi_pixels
 
 
 OBJECT_COLORS = {
@@ -12,9 +12,15 @@ TRAIL_COLOR = (255, 255, 255)
 WATERMARK_COLOR = (0, 255, 0)
 
 
-def draw_tracked_objects(frame, tracked_objects: list[dict], trails: dict[str, list[list[int]]]):
+def draw_tracked_objects(
+    frame,
+    tracked_objects: list[dict],
+    trails: dict[str, list[list[int]]],
+    draw_court_roi_enabled: bool = True,
+):
     """Draw demo tracking boxes, labels, centroids, and movement trails."""
-    draw_court_roi(frame)
+    if draw_court_roi_enabled:
+        draw_court_roi(frame)
     draw_movement_trails(frame, trails)
 
     for tracked_object in tracked_objects:
@@ -27,9 +33,6 @@ def draw_tracked_objects(frame, tracked_objects: list[dict], trails: dict[str, l
 
 
 def draw_court_roi(frame):
-    if not USE_COURT_ROI:
-        return frame
-
     frame_height, frame_width = frame.shape[:2]
     x_min, y_min, x_max, y_max = get_court_roi_pixels(frame_width, frame_height)
     color = (255, 255, 0)
@@ -56,7 +59,7 @@ def draw_bounding_box(frame, tracked_object: dict):
 
 def draw_label(frame, tracked_object: dict):
     x, y, _, _ = tracked_object["bbox"]
-    label = f"{tracked_object['label']} [{tracked_object.get('source', 'unknown')}]"
+    label = _display_label(tracked_object)
     color = _object_color(tracked_object)
     label_position = (x, max(18, y - 8))
     cv2.putText(
@@ -118,3 +121,10 @@ def draw_watermark(frame):
 
 def _object_color(tracked_object: dict) -> tuple[int, int, int]:
     return OBJECT_COLORS.get(tracked_object["type"], (255, 255, 255))
+
+
+def _display_label(tracked_object: dict) -> str:
+    if tracked_object.get("is_demo"):
+        return f"{tracked_object['label']} [prototype demo]"
+
+    return f"{tracked_object['label']} [{tracked_object.get('source', 'unknown')}]"
