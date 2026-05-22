@@ -3,7 +3,12 @@ from pathlib import Path
 import cv2
 
 from app.ai.overlays import draw_tracked_objects
-from app.ai.tracking import get_heuristic_tracked_objects, get_prototype_tracked_objects
+from app.ai.tracking import (
+    USE_COURT_ROI,
+    get_court_roi_metadata,
+    get_heuristic_detection_result,
+    get_prototype_tracked_objects,
+)
 
 
 USE_HEURISTIC_DETECTION = True
@@ -52,6 +57,7 @@ def process_video(input_path: str, output_path: str) -> dict:
     prototype_fallback_frames = 0
     total_heuristic_detections = 0
     max_detections_in_frame = 0
+    detections_filtered_by_roi = 0
     debug_frames_dir = output_file.parent / "debug_frames"
 
     if EXPORT_DEBUG_FRAMES:
@@ -64,7 +70,9 @@ def process_video(input_path: str, output_path: str) -> dict:
 
         frames_processed += 1
         if USE_HEURISTIC_DETECTION:
-            tracked_objects = get_heuristic_tracked_objects(frame, frames_processed, width, height)
+            detection_result = get_heuristic_detection_result(frame, frames_processed, width, height)
+            tracked_objects = detection_result["objects"]
+            detections_filtered_by_roi += detection_result["filtered_by_roi"]
         else:
             tracked_objects = get_prototype_tracked_objects(frames_processed, width, height)
 
@@ -125,6 +133,9 @@ def process_video(input_path: str, output_path: str) -> dict:
             frames_processed,
         ),
         "max_detections_in_frame": max_detections_in_frame,
+        "court_roi_enabled": USE_COURT_ROI,
+        "court_roi": get_court_roi_metadata(),
+        "detections_filtered_by_roi": detections_filtered_by_roi,
     }
 
 

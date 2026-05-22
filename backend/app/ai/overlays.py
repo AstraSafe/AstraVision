@@ -1,5 +1,7 @@
 import cv2
 
+from app.ai.tracking import USE_COURT_ROI, get_court_roi_pixels
+
 
 OBJECT_COLORS = {
     "robot": (0, 255, 255),
@@ -12,6 +14,7 @@ WATERMARK_COLOR = (0, 255, 0)
 
 def draw_tracked_objects(frame, tracked_objects: list[dict], trails: dict[str, list[list[int]]]):
     """Draw demo tracking boxes, labels, centroids, and movement trails."""
+    draw_court_roi(frame)
     draw_movement_trails(frame, trails)
 
     for tracked_object in tracked_objects:
@@ -20,6 +23,27 @@ def draw_tracked_objects(frame, tracked_objects: list[dict], trails: dict[str, l
         draw_centroid(frame, tracked_object)
 
     draw_watermark(frame)
+    return frame
+
+
+def draw_court_roi(frame):
+    if not USE_COURT_ROI:
+        return frame
+
+    frame_height, frame_width = frame.shape[:2]
+    x_min, y_min, x_max, y_max = get_court_roi_pixels(frame_width, frame_height)
+    color = (255, 255, 0)
+    cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, 2)
+    cv2.putText(
+        frame,
+        "Court ROI",
+        (x_min, max(18, y_min - 8)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        color,
+        2,
+        cv2.LINE_AA,
+    )
     return frame
 
 

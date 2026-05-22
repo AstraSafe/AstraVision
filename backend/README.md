@@ -74,7 +74,7 @@ The response includes an output URL when OpenCV finishes processing:
 
 The processed output video shows:
 
-- heuristic or prototype robot and ball boxes
+- heuristic candidate boxes or prototype robot and ball boxes
 - labels and centroid points
 - short movement trails
 - an AstraVision prototype watermark
@@ -107,6 +107,27 @@ fallback objects like `robot_1 [prototype]`, `robot_2 [prototype]`, and
 For tuning, test with real FutBotMX clips that are 10-30 seconds long. Start by
 adjusting the HSV threshold constants and contour filter constants in
 `app/ai/tracking.py`, then compare the processed video and metadata counters.
+
+## Court ROI Tuning
+
+The detector also has a simple Court ROI filter in `app/ai/tracking.py`. The
+ROI is a rectangle defined with normalized ratios from `0.0` to `1.0`, so it
+adapts to different video sizes.
+
+Use the Court ROI to focus heuristic detection on the playing field and ignore
+people, hands, heads, crowd areas, goal posts, and other background noise. The
+output video draws the ROI rectangle and labels it as `Court ROI` so you can
+quickly see whether it covers the field.
+
+Tune these constants first when real clips detect too much background:
+
+- `COURT_ROI_X_MIN_RATIO`
+- `COURT_ROI_Y_MIN_RATIO`
+- `COURT_ROI_X_MAX_RATIO`
+- `COURT_ROI_Y_MAX_RATIO`
+
+These detections are still heuristic candidates, not real SAM 3 robot or ball
+detections. Prototype fallback remains enabled for demo stability.
 
 ## Future AI work
 

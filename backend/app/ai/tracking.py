@@ -25,6 +25,16 @@ MAX_DETECTIONS_PER_FRAME = 3
 MIN_BBOX_WIDTH = 5
 MIN_BBOX_HEIGHT = 5
 
+# Court ROI ratios define the playing field area as percentages of the frame.
+# Use values from 0.0 to 1.0 so the same settings work on different video sizes.
+# Increase the min ratios to crop more from the left/top. Decrease the max
+# ratios to crop more from the right/bottom.
+USE_COURT_ROI = True
+COURT_ROI_X_MIN_RATIO = 0.08
+COURT_ROI_Y_MIN_RATIO = 0.20
+COURT_ROI_X_MAX_RATIO = 0.92
+COURT_ROI_Y_MAX_RATIO = 0.88
+
 
 def get_prototype_tracked_objects(frame_index: int, width: int, height: int) -> list[dict]:
     """Return deterministic demo objects for the current frame.
@@ -53,6 +63,11 @@ def get_prototype_tracked_objects(frame_index: int, width: int, height: int) -> 
 
 
 def get_heuristic_tracked_objects(frame, frame_index: int, width: int, height: int) -> list[dict]:
+    """Return only the detected objects for callers that do not need debug info."""
+    return get_heuristic_detection_result(frame, frame_index, width, height)["objects"]
+
+
+def get_heuristic_detection_result(frame, frame_index: int, width: int, height: int) -> dict:
     """Detect simple bright or colorful regions with OpenCV.
 
     This is an experiment, not real AI. It looks for high-saturation or bright
@@ -79,11 +94,37 @@ def get_heuristic_tracked_objects(frame, frame_index: int, width: int, height: i
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     candidates = _contours_to_candidates(contours, width, height)
+    valid_candidates, filtered_by_roi = _filter_candidates_by_court_roi(candidates, width, height)
 
-    if not candidates:
-        return get_prototype_tracked_objects(frame_index, width, height)
+    if not valid_candidates:
+        return {
+            "objects": get_prototype_tracked_objects(frame_index, width, height),
+            "filtered_by_roi": filtered_by_roi,
+            "used_prototype_fallback": True,
+        }
 
-    return _make_heuristic_objects(candidates[:MAX_DETECTIONS_PER_FRAME])
+    return {
+        "objects": _make_heuristic_objects(valid_candidates[:MAX_DETECTIONS_PER_FRAME]),
+        "filtered_by_roi": filtered_by_roi,
+        "used_prototype_fallback": False,
+    }
+
+
+def get_court_roi_pixels(width: int, height: int) -> tuple[int, int, int, int]:
+    x_min = int(width * COURT_ROI_X_MIN_RATIO)
+    y_min = int(height * COURT_ROI_Y_MIN_RATIO)
+    x_max = int(width * COURT_ROI_X_MAX_RATIO)
+    y_max = int(height * COURT_ROI_Y_MAX_RATIO)
+    return x_min, y_min, x_max, y_max
+
+
+def get_court_roi_metadata() -> dict:
+    return {
+        "x_min_ratio": COURT_ROI_X_MIN_RATIO,
+        "y_min_ratio": COURT_ROI_Y_MIN_RATIO,
+        "x_max_ratio": COURT_ROI_X_MAX_RATIO,
+        "y_max_ratio": COURT_ROI_Y_MAX_RATIO,
+    }
 
 
 def _make_object(
@@ -144,6 +185,30 @@ def _contours_to_candidates(contours, frame_width: int, frame_height: int) -> li
 
     candidates.sort(key=lambda candidate: candidate["area"], reverse=True)
     return candidates
+
+
+def _filter_candidates_by_court_roi(
+    candidates: list[dict],
+    frame_width: int,
+    frame_height: int,
+) -> tuple[list[dict], int]:
+    if not USE_COURT_ROI:
+        return candidates, 0
+
+    x_min, y_min, x_max, y_max = get_court_roi_pixels(frame_width, frame_height)
+    valid_candidates = []
+    filtered_by_roi = 0
+
+    for candidate in candidates:
+        centroid_x = candidate["x"] + candidate["width"] // 2
+        centroid_y = candidate["y"] + candidate["height"] // 2
+
+        if x_min <= centroid_x <= x_max and y_min <= centroid_y <= y_max:
+            valid_candidates.append(candidate)
+        else:
+            filtered_by_roi += 1
+
+    return valid_candidates, filtered_by_roi
 
 
 def _make_heuristic_objects(candidates: list[dict]) -> list[dict]:
