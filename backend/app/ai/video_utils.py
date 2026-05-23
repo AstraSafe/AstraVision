@@ -24,9 +24,14 @@ def create_sample_frames_dir(analysis_id: str) -> Path:
     return sample_dir
 
 
-def generate_sample_frame_filename(frame_index: int, sample_number: int) -> str:
-    """Create a predictable filename for one saved sample frame."""
-    return f"sample_{sample_number:02d}_frame_{frame_index:06d}.jpg"
+def generate_raw_sample_frame_filename(frame_index: int, sample_number: int) -> str:
+    """Create a predictable filename for one saved raw sample frame."""
+    return f"raw_sample_{sample_number:02d}_frame_{frame_index:06d}.jpg"
+
+
+def generate_overlay_sample_frame_filename(frame_index: int, sample_number: int) -> str:
+    """Create a predictable filename for one saved overlay sample frame."""
+    return f"overlay_sample_{sample_number:02d}_frame_{frame_index:06d}.jpg"
 
 
 def sample_frames_relative_dir(analysis_id: str) -> str:

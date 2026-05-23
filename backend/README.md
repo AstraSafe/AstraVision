@@ -169,8 +169,8 @@ remain in place as fallback paths while SAM 3 is being evaluated.
 
 ## Sample Frames
 
-Each successful analysis saves a small number of processed sample frames for
-future SAM 3 testing. They are written to:
+Each successful analysis saves a small number of sample frames. They are written
+to:
 
 ```text
 output_videos/sample_frames/{analysis_id}/
@@ -178,26 +178,46 @@ output_videos/sample_frames/{analysis_id}/
 
 By default, the pipeline saves at most 5 frames, one every 30 frames. This keeps
 storage usage small while still giving us representative images for manual SAM 3
-experiments or future `SamClient` tests.
+experiments, frontend display, demos, and debugging.
 
-SAM 3 is still not active. These sample frames are preparation only.
+The backend saves two versions for each sampled frame:
+
+- `raw_sample_frame_urls` points to clean frames copied from the original video
+  before boxes, labels, trails, the Court ROI, or the watermark are drawn. Use
+  these raw frames for future SAM 3 testing.
+- `overlay_sample_frame_urls` points to frames after the current OpenCV overlays
+  are drawn. Use these overlay frames for frontend display, demos, and debugging.
+- `sample_frame_urls` remains available for frontend compatibility and points to
+  the same overlay frames as `overlay_sample_frame_urls`.
+
+SAM 3 is still not active. These sample frames are preparation only; no SAM 3
+inference runs during video analysis.
 
 You can open a saved frame through the API:
 
 ```text
-http://127.0.0.1:8000/videos/sample-frames/{analysis_id}/sample_01_frame_000030.jpg
+http://127.0.0.1:8000/videos/sample-frames/{analysis_id}/raw_sample_01_frame_000030.jpg
+http://127.0.0.1:8000/videos/sample-frames/{analysis_id}/overlay_sample_01_frame_000030.jpg
 ```
 
-The analysis response also includes `metadata.sample_frame_urls`, which the
-frontend can use directly. Each URL already points to the sample-frame endpoint:
+The analysis response includes sample-frame metadata. Each URL already points to
+the sample-frame endpoint:
 
 ```json
 {
   "sample_frames_saved": 2,
   "sample_frames_dir": "output_videos/sample_frames/{analysis_id}",
   "sample_frame_urls": [
-    "/videos/sample-frames/{analysis_id}/sample_01_frame_000030.jpg",
-    "/videos/sample-frames/{analysis_id}/sample_02_frame_000060.jpg"
+    "/videos/sample-frames/{analysis_id}/overlay_sample_01_frame_000030.jpg",
+    "/videos/sample-frames/{analysis_id}/overlay_sample_02_frame_000060.jpg"
+  ],
+  "raw_sample_frame_urls": [
+    "/videos/sample-frames/{analysis_id}/raw_sample_01_frame_000030.jpg",
+    "/videos/sample-frames/{analysis_id}/raw_sample_02_frame_000060.jpg"
+  ],
+  "overlay_sample_frame_urls": [
+    "/videos/sample-frames/{analysis_id}/overlay_sample_01_frame_000030.jpg",
+    "/videos/sample-frames/{analysis_id}/overlay_sample_02_frame_000060.jpg"
   ]
 }
 ```

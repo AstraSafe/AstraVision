@@ -6,7 +6,8 @@ from app.ai.overlays import draw_tracked_objects
 from app.ai.sam_client import SamClient
 from app.ai.video_utils import (
     create_sample_frames_dir,
-    generate_sample_frame_filename,
+    generate_overlay_sample_frame_filename,
+    generate_raw_sample_frame_filename,
     sample_frame_url,
     sample_frames_relative_dir,
 )
@@ -95,7 +96,8 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
     sample_frames_saved = 0
     sample_frames_dir = None
     sample_frames_dir_metadata = sample_frames_relative_dir(analysis_id)
-    sample_frame_urls = []
+    raw_sample_frame_urls = []
+    overlay_sample_frame_urls = []
 
     if EXPORT_DEBUG_FRAMES:
         debug_frames_dir.mkdir(parents=True, exist_ok=True)
@@ -109,6 +111,7 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
             break
 
         frames_processed += 1
+        raw_frame = frame.copy()
         sam_masks = []
         if _should_attempt_sam3(frames_processed, sam_3_available):
             sam_3_frames_attempted += 1
@@ -160,13 +163,22 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
 
         if _should_save_sample_frame(frames_processed, sample_frames_saved):
             sample_frames_saved += 1
-            sample_filename = generate_sample_frame_filename(
+            raw_sample_filename = generate_raw_sample_frame_filename(
                 frame_index=frames_processed,
                 sample_number=sample_frames_saved,
             )
-            sample_frame_path = sample_frames_dir / sample_filename
-            cv2.imwrite(str(sample_frame_path), frame)
-            sample_frame_urls.append(sample_frame_url(analysis_id, sample_filename))
+            overlay_sample_filename = generate_overlay_sample_frame_filename(
+                frame_index=frames_processed,
+                sample_number=sample_frames_saved,
+            )
+
+            raw_sample_frame_path = sample_frames_dir / raw_sample_filename
+            overlay_sample_frame_path = sample_frames_dir / overlay_sample_filename
+            cv2.imwrite(str(raw_sample_frame_path), raw_frame)
+            cv2.imwrite(str(overlay_sample_frame_path), frame)
+
+            raw_sample_frame_urls.append(sample_frame_url(analysis_id, raw_sample_filename))
+            overlay_sample_frame_urls.append(sample_frame_url(analysis_id, overlay_sample_filename))
 
         writer.write(frame)
 
@@ -219,7 +231,9 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
         "sample_frame_interval": SAMPLE_FRAME_INTERVAL,
         "sample_frames_saved": sample_frames_saved,
         "sample_frames_dir": sample_frames_dir_metadata,
-        "sample_frame_urls": sample_frame_urls,
+        "sample_frame_urls": overlay_sample_frame_urls,
+        "raw_sample_frame_urls": raw_sample_frame_urls,
+        "overlay_sample_frame_urls": overlay_sample_frame_urls,
     }
 
 
