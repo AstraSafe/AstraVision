@@ -38,6 +38,9 @@ const navigationItems = [
   },
 ]
 
+const headerButtonHoverClass =
+  "transition-transform duration-300 ease-out hover:scale-[1.2]"
+
 export function AppLayout() {
   return (
     <div className="min-h-svh bg-background text-foreground">
@@ -106,11 +109,11 @@ export function AppLayout() {
                     <CircleCheck className="h-3 w-3" />
                     Sistema listo
                   </Badge>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className={headerButtonHoverClass}>
                     <UploadCloud className="h-4 w-4" />
                     Subir video
                   </Button>
-                  <Button size="sm">
+                  <Button size="sm" className={headerButtonHoverClass}>
                     <BarChart3 className="h-4 w-4" />
                     Nuevo análisis
                   </Button>

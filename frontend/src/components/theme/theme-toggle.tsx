@@ -15,7 +15,7 @@ export function ThemeToggle() {
       aria-label="Cambiar tema"
       title="Cambiar tema"
       onClick={toggleTheme}
-      className="bg-background/80"
+      className="bg-background/80 transition-transform duration-300 ease-out hover:scale-[1.2]"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       <span className="sr-only">Cambiar tema</span>
