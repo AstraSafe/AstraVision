@@ -4,6 +4,7 @@ import cv2
 
 from app.ai.overlays import draw_tracked_objects
 from app.ai.sam_client import SamClient
+from app.ai.video_transcoder import transcode_to_browser_mp4
 from app.ai.video_utils import (
     create_sample_frames_dir,
     generate_sample_frame_filename,
@@ -71,9 +72,10 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
 
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    intermediate_output_file = output_file.with_name(f"{output_file.stem}_opencv{output_file.suffix}")
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(str(output_file), fourcc, fps, (width, height))
+    writer = cv2.VideoWriter(str(intermediate_output_file), fourcc, fps, (width, height))
     if not writer.isOpened():
         capture.release()
         raise ValueError("OpenCV could not create the processed output video.")
@@ -173,6 +175,14 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
     capture.release()
     writer.release()
 
+    if not output_file.exists():
+        intermediate_output_file.replace(output_file)
+
+    transcoding_metadata = transcode_to_browser_mp4(
+        intermediate_path=str(output_file),
+        final_path=str(output_file),
+    )
+
     return {
         "pipeline_status": "opencv_processed",
         "opencv_enabled": True,
@@ -220,6 +230,7 @@ def process_video(input_path: str, output_path: str, analysis_id: str) -> dict:
         "sample_frames_saved": sample_frames_saved,
         "sample_frames_dir": sample_frames_dir_metadata,
         "sample_frame_urls": sample_frame_urls,
+        **transcoding_metadata,
     }
 
 

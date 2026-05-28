@@ -89,6 +89,30 @@ Open the processed video in the browser:
 http://127.0.0.1:8000/videos/output/example_generated-id_analyzed.mp4
 ```
 
+## Browser Video Playback
+
+Browsers need a compatible codec inside the `.mp4` file. The `.mp4` extension
+alone is not enough. OpenCV often writes MP4 files with a codec such as `mp4v`,
+which may not play in an HTML `<video>` tag.
+
+After OpenCV finishes writing the processed video, the backend tries to use
+`ffmpeg` to transcode it into a browser-friendly MP4:
+
+```bash
+ffmpeg -y -i output.mp4 -c:v libx264 -pix_fmt yuv420p -movflags +faststart -an output_h264.mp4
+```
+
+For local development, install `ffmpeg` manually on your system so the backend
+can produce H.264/yuv420p output. If `ffmpeg` is missing or transcoding fails,
+the backend keeps the OpenCV output and returns a metadata warning.
+
+Useful debug commands:
+
+```bash
+ffprobe output_videos/example_generated-id_analyzed.mp4
+ffmpeg -y -i output_videos/example_generated-id_analyzed.mp4 -c:v libx264 -pix_fmt yuv420p -movflags +faststart -an output_videos/manual_h264_test.mp4
+```
+
 Uploads larger than 200 MB are rejected with a clear JSON error response. Large
 videos should be handled later with background jobs, queues, or offline
 processing so the HTTP request does not stay open for too long.
